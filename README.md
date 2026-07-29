@@ -17,25 +17,15 @@ Mi objetivo es seguir mejorando esta herramienta, agregar nuevas funciones y man
 
 ## 👨‍💻 Creador
 
-Desarrollado por **Kode420**.
+Desarrollado por **Kode0420**.
 
 ---
 
-## 🌐 Demo
+## 🌐 PAGINA
 
 Puedes probar la aplicación aquí:
 
 *(https://kode0420.github.io/DrivePilot/)*
-
----
-
-# 🚖 DrivePilot
-
-> Asistente Inteligente para Conductores de Aplicaciones de Movilidad.
-
-DrivePilot es una aplicación web diseñada para ayudar a conductores a administrar sus ingresos, gastos y jornadas de trabajo desde cualquier dispositivo.
-
-El objetivo del proyecto es ofrecer herramientas útiles para mejorar la productividad diaria mediante estadísticas, historial, análisis y mapas inteligentes de demanda.
 
 ---
 
