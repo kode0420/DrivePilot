@@ -4,11 +4,14 @@
 
 ## 🌎 Historia del proyecto
 
-DrivePilot nació como un proyecto creado con la idea de desarrollar una herramienta útil para los conductores de plataformas de movilidad, ayudándolos a organizar sus ingresos, gastos y tomar mejores decisiones durante sus jornadas.
+DrivePilot nació de una idea sencilla: crear una herramienta que realmente pudiera ayudar a las personas que trabajan día a día con aplicaciones de movilidad.
 
-La aplicación fue creada con el propósito de combinar tecnología y soluciones prácticas en una sola herramienta, buscando facilitar la administración diaria y brindar información clara que permita aprovechar mejor cada recorrido.
+Muchas veces los conductores pasan horas trabajando sin tener una forma clara de saber cuánto están ganando realmente, cuánto están gastando o cómo pueden organizar mejor sus jornadas. De ahí surgió la necesidad de crear una herramienta simple, práctica y fácil de usar.
 
-Este proyecto representa la unión entre programación, innovación y la intención de crear herramientas que puedan ser utilizadas por cualquier persona que necesite mejorar su organización financiera.
+Este proyecto fue creado con la intención de unir mi pasión por la programación con una solución que pueda ser útil en la vida real. Más que una aplicación, DrivePilot representa el esfuerzo de transformar una idea en algo que pueda ayudar a otras personas.
+
+Mi objetivo es seguir mejorando esta herramienta, agregar nuevas funciones y mantenerla como un proyecto abierto para que más conductores puedan aprovecharla.
+
 
 ---
 
