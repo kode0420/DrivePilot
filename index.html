@@ -1134,7 +1134,105 @@
 
     // ========== SISTEMA DE MAPA INTELIGENTE DE DEMANDA ==========
     
-    // Configuración de horarios y demanda
+    // ============================================================
+    // POLÍGONOS DE ZONAS DEL ÁREA METROPOLITANA DE BUCARAMANGA
+    // Cada zona se define con un array de coordenadas [lat, lng]
+    // que forman su perímetro aproximado.
+    // ============================================================
+    
+    const poligonosZonas = {
+        // --- ZONAS PRINCIPALES DE BUCARAMANGA ---
+        centro: [
+            [7.1310, -73.1230], [7.1310, -73.1140], [7.1280, -73.1120],
+            [7.1240, -73.1120], [7.1210, -73.1140], [7.1200, -73.1180],
+            [7.1210, -73.1220], [7.1240, -73.1250], [7.1270, -73.1250],
+            [7.1300, -73.1240]
+        ],
+        cabecera: [
+            [7.1240, -73.1080], [7.1240, -73.0980], [7.1190, -73.0940],
+            [7.1130, -73.0940], [7.1100, -73.0970], [7.1100, -73.1020],
+            [7.1130, -73.1060], [7.1180, -73.1080]
+        ],
+        canaveral: [
+            [7.1160, -73.1120], [7.1160, -73.1000], [7.1080, -73.0980],
+            [7.1030, -73.1000], [7.1030, -73.1060], [7.1060, -73.1110],
+            [7.1100, -73.1130]
+        ],
+        floridablanca: [
+            [7.0820, -73.1080], [7.0820, -73.0920], [7.0750, -73.0860],
+            [7.0620, -73.0860], [7.0560, -73.0920], [7.0560, -73.1020],
+            [7.0600, -73.1080], [7.0700, -73.1100]
+        ],
+        terminal: [
+            [7.1400, -73.1160], [7.1400, -73.1060], [7.1340, -73.1020],
+            [7.1290, -73.1020], [7.1280, -73.1070], [7.1300, -73.1130],
+            [7.1350, -73.1160]
+        ],
+        clínicas: [
+            [7.1200, -73.1310], [7.1200, -73.1230], [7.1160, -73.1200],
+            [7.1120, -73.1210], [7.1120, -73.1280], [7.1150, -73.1330],
+            [7.1180, -73.1320]
+        ],
+        uis: [
+            [7.1470, -73.1320], [7.1470, -73.1220], [7.1410, -73.1180],
+            [7.1360, -73.1190], [7.1360, -73.1260], [7.1400, -73.1330]
+        ],
+        centrosComerciales: [
+            [7.1120, -73.1140], [7.1120, -73.1050], [7.1070, -73.1020],
+            [7.1040, -73.1050], [7.1040, -73.1120], [7.1070, -73.1150],
+            [7.1100, -73.1150]
+        ],
+        zonasOcio: [
+            [7.1280, -73.1210], [7.1280, -73.1130], [7.1230, -73.1100],
+            [7.1190, -73.1120], [7.1190, -73.1180], [7.1220, -73.1230],
+            [7.1260, -73.1230]
+        ],
+        parquesRecreo: [
+            [7.1100, -73.1250], [7.1100, -73.1170], [7.1040, -73.1140],
+            [7.0990, -73.1160], [7.0990, -73.1230], [7.1030, -73.1270],
+            [7.1080, -73.1260]
+        ],
+        giron: [
+            [7.1450, -73.2000], [7.1450, -73.1800], [7.1380, -73.1750],
+            [7.1330, -73.1780], [7.1330, -73.1900], [7.1370, -73.1980]
+        ],
+        piedecuesta: [
+            [7.1780, -73.1950], [7.1780, -73.1680], [7.1680, -73.1630],
+            [7.1580, -73.1650], [7.1550, -73.1750], [7.1600, -73.1900],
+            [7.1700, -73.1960]
+        ],
+        residencialNorte: [
+            [7.1480, -73.1400], [7.1480, -73.1300], [7.1420, -73.1270],
+            [7.1380, -73.1300], [7.1380, -73.1380], [7.1430, -73.1420]
+        ],
+        empresarial: [
+            [7.1260, -73.1180], [7.1260, -73.1100], [7.1210, -73.1080],
+            [7.1170, -73.1100], [7.1170, -73.1160], [7.1200, -73.1200],
+            [7.1240, -73.1200]
+        ]
+    };
+
+    // Colores y estilos para cada nivel de demanda
+    const estilosDemanda = {
+        'muy_alta': {
+            fillColor: '#FF0000', fillOpacity: 0.45, color: '#CC0000', weight: 2.5,
+            label: 'MUY ALTA', emoji: '🔴'
+        },
+        'alta': {
+            fillColor: '#FF8800', fillOpacity: 0.35, color: '#CC6600', weight: 2,
+            label: 'ALTA', emoji: '🟠'
+        },
+        'media': {
+            fillColor: '#FFD700', fillOpacity: 0.25, color: '#BFB000', weight: 1.5,
+            label: 'MEDIA', emoji: '🟡'
+        },
+        'baja': {
+            fillColor: '#32CD32', fillOpacity: 0.18, color: '#228B22', weight: 1.5,
+            label: 'BAJA', emoji: '🟢'
+        }
+    };
+
+    // Configuración de horarios y demanda (versión con zonas poligonales)
     const horariosConfig = [
         {
             nombre: 'Madrugada',
@@ -1142,15 +1240,16 @@
             rango: '00:00-05:00',
             descripcion: 'Demanda nocturna (bares, discotecas, hospitales, terminales)',
             zonas: [
-                { nombre: 'Centro Histórico', lat: 7.1255, lng: -73.1183, demanda: 'alta', razon: 'Bares y restaurantes nocturnos', mejorHorario: '22:00-03:00' },
-                { nombre: 'Cabecera', lat: 7.1180, lng: -73.1024, demanda: 'media', razon: 'Servicios 24h y hospitales', mejorHorario: '00:00-05:00' },
-                { nombre: 'Terminal de Transporte', lat: 7.1350, lng: -73.1100, demanda: 'alta', razon: 'Pasajeros nocturnos', mejorHorario: '22:00-05:00' }
+                { id: 'zonasOcio', nombre: 'Centro Nocturno', demanda: 'muy_alta', razon: 'Bares, restaurantes y discotecas', mejorHorario: '22:00-03:00' },
+                { id: 'terminal', nombre: 'Terminal de Transporte', demanda: 'alta', razon: 'Pasajeros nocturnos y vuelos', mejorHorario: '22:00-05:00' },
+                { id: 'clínicas', nombre: 'Zona de Clínicas', demanda: 'alta', razon: 'Hospitales y servicios 24h', mejorHorario: '00:00-06:00' },
+                { id: 'cabecera', nombre: 'Cabecera', demanda: 'media', razon: 'Servicios nocturnos', mejorHorario: '00:00-05:00' }
             ],
             heatmapPoints: [
-                [7.1255, -73.1183, 0.8], [7.1260, -73.1180, 0.7], [7.1250, -73.1185, 0.75], [7.1265, -73.1175, 0.65],
-                [7.1180, -73.1024, 0.5], [7.1185, -73.1020, 0.45], [7.1175, -73.1028, 0.4], [7.1190, -73.1015, 0.35],
-                [7.1350, -73.1100, 0.7], [7.1355, -73.1095, 0.65], [7.1345, -73.1105, 0.6], [7.1360, -73.1090, 0.55],
-                [7.1200, -73.1150, 0.3], [7.1210, -73.1145, 0.25]
+                [7.1250, -73.1180, 0.9], [7.1255, -73.1175, 0.85], [7.1245, -73.1185, 0.8], [7.1260, -73.1170, 0.75],
+                [7.1350, -73.1100, 0.7], [7.1355, -73.1095, 0.65], [7.1345, -73.1105, 0.6],
+                [7.1170, -73.1270, 0.65], [7.1180, -73.1260, 0.6], [7.1160, -73.1280, 0.55],
+                [7.1180, -73.1024, 0.45], [7.1185, -73.1020, 0.4], [7.1190, -73.1015, 0.35]
             ]
         },
         {
@@ -1159,15 +1258,18 @@
             rango: '05:00-08:00',
             descripcion: 'Trabajadores y universidades',
             zonas: [
-                { nombre: 'UIS Campus', lat: 7.1400, lng: -73.1250, demanda: 'muy_alta', razon: 'Estudiantes hacia universidad', mejorHorario: '06:30-08:00' },
-                { nombre: 'Centro Empresarial', lat: 7.1200, lng: -73.1150, demanda: 'muy_alta', razon: 'Trabajadores hacia oficinas', mejorHorario: '06:00-08:00' },
-                { nombre: 'Floridablanca', lat: 7.0697, lng: -73.0978, demanda: 'alta', razon: 'Traslados laborales', mejorHorario: '06:30-08:00' }
+                { id: 'uis', nombre: 'UIS Campus', demanda: 'muy_alta', razon: 'Estudiantes hacia la universidad', mejorHorario: '06:30-08:00' },
+                { id: 'empresarial', nombre: 'Zona Empresarial', demanda: 'muy_alta', razon: 'Trabajadores hacia oficinas', mejorHorario: '06:00-08:00' },
+                { id: 'floridablanca', nombre: 'Floridablanca', demanda: 'alta', razon: 'Traslados laborales', mejorHorario: '06:30-08:00' },
+                { id: 'residencialNorte', nombre: 'Residencial Norte', demanda: 'alta', razon: 'Origen de viajeros', mejorHorario: '06:00-08:00' },
+                { id: 'terminal', nombre: 'Terminal', demanda: 'alta', razon: 'Viajes tempranos', mejorHorario: '05:00-08:00' }
             ],
             heatmapPoints: [
-                [7.1400, -73.1250, 1.0], [7.1405, -73.1245, 0.95], [7.1395, -73.1255, 0.9], [7.1410, -73.1240, 0.85], [7.1390, -73.1260, 0.8],
-                [7.1200, -73.1150, 0.95], [7.1205, -73.1145, 0.9], [7.1195, -73.1155, 0.85], [7.1210, -73.1140, 0.8], [7.1190, -73.1160, 0.75],
-                [7.0697, -73.0978, 0.7], [7.0702, -73.0973, 0.65], [7.0692, -73.0983, 0.6], [7.0707, -73.0968, 0.55],
-                [7.1300, -73.1200, 0.5], [7.1310, -73.1190, 0.45], [7.1150, -73.1100, 0.4]
+                [7.1400, -73.1250, 1.0], [7.1405, -73.1245, 0.95], [7.1395, -73.1255, 0.9], [7.1410, -73.1240, 0.85],
+                [7.1220, -73.1140, 0.95], [7.1225, -73.1135, 0.9], [7.1215, -73.1145, 0.85], [7.1230, -73.1130, 0.8],
+                [7.0700, -73.0980, 0.75], [7.0705, -73.0975, 0.7], [7.0695, -73.0985, 0.65],
+                [7.1450, -73.1350, 0.6], [7.1460, -73.1340, 0.55],
+                [7.1350, -73.1100, 0.6], [7.1360, -73.1095, 0.55]
             ]
         },
         {
@@ -1176,15 +1278,18 @@
             rango: '08:00-12:00',
             descripcion: 'Oficinas y diligencias',
             zonas: [
-                { nombre: 'Centro Comercial Cañaveral', lat: 7.1100, lng: -73.1050, demanda: 'alta', razon: 'Compras y diligencias', mejorHorario: '09:00-12:00' },
-                { nombre: 'Zona Administrativa', lat: 7.1250, lng: -73.1200, demanda: 'media', razon: 'Trámites y oficinas', mejorHorario: '09:00-11:00' },
-                { nombre: 'Girón Centro', lat: 7.1400, lng: -73.1900, demanda: 'media', razon: 'Diligencias locales', mejorHorario: '09:00-12:00' }
+                { id: 'canaveral', nombre: 'Centro Comercial Cañaveral', demanda: 'alta', razon: 'Compras, diligencias y oficinas', mejorHorario: '09:00-12:00' },
+                { id: 'centro', nombre: 'Centro Histórico', demanda: 'media', razon: 'Trámites, oficinas y bancos', mejorHorario: '09:00-11:00' },
+                { id: 'giron', nombre: 'Girón Centro', demanda: 'media', razon: 'Diligencias locales', mejorHorario: '09:00-12:00' },
+                { id: 'empresarial', nombre: 'Zona Empresarial', demanda: 'alta', razon: 'Reuniones y viajes corporativos', mejorHorario: '08:00-10:00' },
+                { id: 'clínicas', nombre: 'Zona de Clínicas', demanda: 'alta', razon: 'Citas médicas matutinas', mejorHorario: '08:00-11:00' }
             ],
             heatmapPoints: [
-                [7.1100, -73.1050, 0.8], [7.1105, -73.1045, 0.75], [7.1095, -73.1055, 0.7], [7.1110, -73.1040, 0.65], [7.1090, -73.1060, 0.6],
-                [7.1250, -73.1200, 0.6], [7.1255, -73.1195, 0.55], [7.1245, -73.1205, 0.5], [7.1260, -73.1190, 0.45],
-                [7.1400, -73.1900, 0.5], [7.1405, -73.1895, 0.45], [7.1395, -73.1905, 0.4], [7.1410, -73.1890, 0.35],
-                [7.1200, -73.1150, 0.55], [7.1180, -73.1024, 0.4]
+                [7.1100, -73.1050, 0.8], [7.1105, -73.1045, 0.75], [7.1095, -73.1055, 0.7], [7.1110, -73.1040, 0.65],
+                [7.1250, -73.1200, 0.65], [7.1255, -73.1195, 0.6], [7.1245, -73.1205, 0.55],
+                [7.1400, -73.1900, 0.5], [7.1405, -73.1895, 0.45], [7.1395, -73.1905, 0.4],
+                [7.1220, -73.1140, 0.6], [7.1225, -73.1135, 0.55],
+                [7.1170, -73.1270, 0.6], [7.1180, -73.1260, 0.55]
             ]
         },
         {
@@ -1193,15 +1298,18 @@
             rango: '12:00-14:00',
             descripcion: 'Almuerzos y centros comerciales',
             zonas: [
-                { nombre: 'Centro Comercial Cacique', lat: 7.1150, lng: -73.1100, demanda: 'muy_alta', razon: 'Almuerzo y compras', mejorHorario: '12:00-14:00' },
-                { nombre: 'Zona Gastronómica', lat: 7.1200, lng: -73.1180, demanda: 'muy_alta', razon: 'Restaurantes y cafés', mejorHorario: '12:00-13:30' },
-                { nombre: 'Parque Caracolí', lat: 7.1050, lng: -73.1200, demanda: 'alta', razon: 'Centro comercial', mejorHorario: '12:00-14:00' }
+                { id: 'centrosComerciales', nombre: 'Centro Comercial Cacique', demanda: 'muy_alta', razon: 'Almuerzo y compras', mejorHorario: '12:00-14:00' },
+                { id: 'centro', nombre: 'Zona Gastronómica', demanda: 'muy_alta', razon: 'Restaurantes y cafés', mejorHorario: '12:00-13:30' },
+                { id: 'parquesRecreo', nombre: 'Parque Caracolí', demanda: 'alta', razon: 'Centro comercial', mejorHorario: '12:00-14:00' },
+                { id: 'canaveral', nombre: 'Cañaveral', demanda: 'alta', razon: 'Almuerzo en CC', mejorHorario: '12:00-13:30' },
+                { id: 'empresarial', nombre: 'Zona Empresarial', demanda: 'media', razon: 'Almuerzos corporativos', mejorHorario: '12:30-13:30' }
             ],
             heatmapPoints: [
-                [7.1150, -73.1100, 1.0], [7.1155, -73.1095, 0.95], [7.1145, -73.1105, 0.9], [7.1160, -73.1090, 0.85], [7.1140, -73.1110, 0.8],
-                [7.1200, -73.1180, 0.95], [7.1205, -73.1175, 0.9], [7.1195, -73.1185, 0.85], [7.1210, -73.1170, 0.8], [7.1190, -73.1190, 0.75],
-                [7.1050, -73.1200, 0.75], [7.1055, -73.1195, 0.7], [7.1045, -73.1205, 0.65], [7.1060, -73.1190, 0.6],
-                [7.1100, -73.1050, 0.6], [7.1120, -73.1150, 0.5]
+                [7.1080, -73.1080, 1.0], [7.1085, -73.1075, 0.95], [7.1075, -73.1085, 0.9], [7.1090, -73.1070, 0.85],
+                [7.1230, -73.1180, 0.95], [7.1235, -73.1175, 0.9], [7.1225, -73.1185, 0.85], [7.1240, -73.1170, 0.8],
+                [7.1040, -73.1200, 0.8], [7.1045, -73.1195, 0.75], [7.1035, -73.1205, 0.7],
+                [7.1100, -73.1050, 0.75], [7.1105, -73.1045, 0.7],
+                [7.1220, -73.1140, 0.55]
             ]
         },
         {
@@ -1210,15 +1318,16 @@
             rango: '14:00-17:00',
             descripcion: 'Demanda media',
             zonas: [
-                { nombre: 'Zonas Residenciales', lat: 7.1300, lng: -73.1300, demanda: 'media', razon: 'Traslados locales', mejorHorario: '14:00-17:00' },
-                { nombre: 'Piedecuesta', lat: 7.1700, lng: -73.1800, demanda: 'baja', razon: 'Demanda moderada', mejorHorario: '14:00-17:00' },
-                { nombre: 'Floridablanca Sur', lat: 7.0500, lng: -73.0900, demanda: 'media', razon: 'Traslados internos', mejorHorario: '14:00-17:00' }
+                { id: 'residencialNorte', nombre: 'Zonas Residenciales', demanda: 'media', razon: 'Traslados locales', mejorHorario: '14:00-17:00' },
+                { id: 'piedecuesta', nombre: 'Piedecuesta', demanda: 'baja', razon: 'Demanda moderada', mejorHorario: '14:00-17:00' },
+                { id: 'floridablanca', nombre: 'Floridablanca Sur', demanda: 'media', razon: 'Traslados internos', mejorHorario: '14:00-17:00' },
+                { id: 'giron', nombre: 'Girón', demanda: 'media', razon: 'Diligencias tarde', mejorHorario: '14:00-16:00' }
             ],
             heatmapPoints: [
-                [7.1300, -73.1300, 0.5], [7.1305, -73.1295, 0.45], [7.1295, -73.1305, 0.4], [7.1310, -73.1290, 0.35],
-                [7.1700, -73.1800, 0.3], [7.1705, -73.1795, 0.25], [7.1695, -73.1805, 0.2], [7.1710, -73.1790, 0.15],
-                [7.0500, -73.0900, 0.45], [7.0505, -73.0895, 0.4], [7.0495, -73.0905, 0.35], [7.0510, -73.0890, 0.3],
-                [7.1150, -73.1100, 0.35], [7.1200, -73.1150, 0.3]
+                [7.1430, -73.1360, 0.4], [7.1440, -73.1350, 0.35],
+                [7.1700, -73.1800, 0.25], [7.1710, -73.1790, 0.2],
+                [7.0700, -73.0980, 0.35], [7.0710, -73.0970, 0.3],
+                [7.1400, -73.1900, 0.35], [7.1410, -73.1890, 0.3]
             ]
         },
         {
@@ -1227,15 +1336,20 @@
             rango: '17:00-20:00',
             descripcion: 'Hora pico de retorno a casa',
             zonas: [
-                { nombre: 'Centro a Residenciales', lat: 7.1200, lng: -73.1150, demanda: 'muy_alta', razon: 'Retorno del trabajo', mejorHorario: '17:00-19:00' },
-                { nombre: 'Cañaveral', lat: 7.1100, lng: -73.1050, demanda: 'muy_alta', razon: 'Salida de centros comerciales', mejorHorario: '17:00-20:00' },
-                { nombre: 'Cabecera Salida', lat: 7.1180, lng: -73.1024, demanda: 'alta', razon: 'Retorno masivo', mejorHorario: '17:30-19:30' }
+                { id: 'centro', nombre: 'Centro (Origen)', demanda: 'muy_alta', razon: 'Retorno masivo del trabajo', mejorHorario: '17:00-19:00' },
+                { id: 'empresarial', nombre: 'Zona Empresarial (Origen)', demanda: 'muy_alta', razon: 'Salida de oficinas', mejorHorario: '17:30-19:00' },
+                { id: 'canaveral', nombre: 'Cañaveral', demanda: 'muy_alta', razon: 'Salida de centros comerciales', mejorHorario: '17:00-20:00' },
+                { id: 'cabecera', nombre: 'Cabecera', demanda: 'alta', razon: 'Retorno masivo', mejorHorario: '17:30-19:30' },
+                { id: 'floridablanca', nombre: 'Floridablanca (Destino)', demanda: 'alta', razon: 'Llegada de trabajadores', mejorHorario: '17:30-19:30' },
+                { id: 'residencialNorte', nombre: 'Residencial Norte (Destino)', demanda: 'alta', razon: 'Retorno a casa', mejorHorario: '18:00-20:00' }
             ],
             heatmapPoints: [
-                [7.1200, -73.1150, 1.0], [7.1205, -73.1145, 0.95], [7.1195, -73.1155, 0.9], [7.1210, -73.1140, 0.85], [7.1190, -73.1160, 0.8],
-                [7.1100, -73.1050, 0.95], [7.1105, -73.1045, 0.9], [7.1095, -73.1055, 0.85], [7.1110, -73.1040, 0.8], [7.1090, -73.1060, 0.75],
-                [7.1180, -73.1024, 0.8], [7.1185, -73.1020, 0.75], [7.1175, -73.1028, 0.7], [7.1190, -73.1015, 0.65],
-                [7.1300, -73.1300, 0.6], [7.1250, -73.1200, 0.5]
+                [7.1250, -73.1200, 1.0], [7.1255, -73.1195, 0.95], [7.1245, -73.1205, 0.9], [7.1260, -73.1190, 0.85],
+                [7.1220, -73.1140, 1.0], [7.1225, -73.1135, 0.95], [7.1215, -73.1145, 0.9],
+                [7.1100, -73.1050, 0.95], [7.1105, -73.1045, 0.9], [7.1095, -73.1055, 0.85],
+                [7.1180, -73.1024, 0.85], [7.1185, -73.1020, 0.8], [7.1175, -73.1028, 0.75],
+                [7.0700, -73.0980, 0.7], [7.0710, -73.0970, 0.65],
+                [7.1450, -73.1360, 0.65]
             ]
         },
         {
@@ -1244,21 +1358,25 @@
             rango: '20:00-00:00',
             descripcion: 'Restaurantes, centros comerciales y ocio',
             zonas: [
-                { nombre: 'Zona de Ocio Centro', lat: 7.1250, lng: -73.1180, demanda: 'muy_alta', razon: 'Restaurantes y bares', mejorHorario: '20:00-23:00' },
-                { nombre: 'Cines y Entretenimiento', lat: 7.1100, lng: -73.1050, demanda: 'alta', razon: 'Cines y diversión', mejorHorario: '20:00-23:00' },
-                { nombre: 'Discotecas Centro', lat: 7.1200, lng: -73.1200, demanda: 'alta', razon: 'Vida nocturna', mejorHorario: '22:00-00:00' }
+                { id: 'zonasOcio', nombre: 'Zona de Ocio Centro', demanda: 'muy_alta', razon: 'Restaurantes, bares y vida nocturna', mejorHorario: '20:00-23:00' },
+                { id: 'centrosComerciales', nombre: 'Cines y Entretenimiento', demanda: 'alta', razon: 'Cines y diversión', mejorHorario: '20:00-23:00' },
+                { id: 'canaveral', nombre: 'Cañaveral', demanda: 'alta', razon: 'Cenas y entretenimiento', mejorHorario: '20:00-22:00' },
+                { id: 'terminal', nombre: 'Terminal', demanda: 'media', razon: 'Pasajeros nocturnos', mejorHorario: '20:00-00:00' },
+                { id: 'clínicas', nombre: 'Clínicas', demanda: 'media', razon: 'Urgencias nocturnas', mejorHorario: '20:00-02:00' }
             ],
             heatmapPoints: [
-                [7.1250, -73.1180, 0.95], [7.1255, -73.1175, 0.9], [7.1245, -73.1185, 0.85], [7.1260, -73.1170, 0.8], [7.1240, -73.1190, 0.75],
-                [7.1100, -73.1050, 0.8], [7.1105, -73.1045, 0.75], [7.1095, -73.1055, 0.7], [7.1110, -73.1040, 0.65], [7.1090, -73.1060, 0.6],
-                [7.1200, -73.1200, 0.75], [7.1205, -73.1195, 0.7], [7.1195, -73.1205, 0.65], [7.1210, -73.1190, 0.6],
-                [7.1150, -73.1100, 0.7], [7.1180, -73.1024, 0.6]
+                [7.1250, -73.1180, 0.95], [7.1255, -73.1175, 0.9], [7.1245, -73.1185, 0.85], [7.1260, -73.1170, 0.8],
+                [7.1080, -73.1080, 0.8], [7.1085, -73.1075, 0.75], [7.1075, -73.1085, 0.7],
+                [7.1100, -73.1050, 0.7], [7.1105, -73.1045, 0.65],
+                [7.1350, -73.1100, 0.5], [7.1360, -73.1095, 0.45],
+                [7.1170, -73.1270, 0.55], [7.1180, -73.1260, 0.5]
             ]
         }
     ];
 
     let mapInstance = null;
     let heatmapLayer = null;
+    let polygonLayers = [];
     const centerBucaramanga = [7.1255, -73.1183];
 
     // Inicializar mapa cuando el DOM esté listo
@@ -1311,7 +1429,7 @@
 
         if (horarioActual) {
             actualizarVistaHorario(horarioActual);
-            renderizarHeatmap(horarioActual);
+            renderizarZonasDemanda(horarioActual);
         }
     }
 
@@ -1322,62 +1440,80 @@
         document.getElementById('currentTime').textContent = horario.rango + ' (' + horario.descripcion + ')';
     }
 
-    // Renderizar heatmap con datos de demanda
-    function renderizarHeatmap(horario) {
+    // ============================================================
+    // FUNCIÓN PRINCIPAL: Renderizar Zonas de Demanda (Polígonos + Heatmap)
+    // ============================================================
+    function renderizarZonasDemanda(horario) {
+        // 1. Limpiar capas anteriores
         if (heatmapLayer) {
             mapInstance.removeLayer(heatmapLayer);
+            heatmapLayer = null;
         }
+        polygonLayers.forEach(layer => mapInstance.removeLayer(layer));
+        polygonLayers = [];
 
-        // Usar los puntos de heatmap predefinidos del horario
-        const puntosCalor = horario.heatmapPoints || [];
+        // 2. Renderizar polígonos de zonas activas
+        const zonasActivas = horario.zonas || [];
+        zonasActivas.forEach(zona => {
+            const coords = poligonosZonas[zona.id];
+            if (!coords) return;
 
-        // Crear heatmap con transición suave
-        heatmapLayer = L.heatLayer(puntosCalor, {
-            radius: 50,
-            blur: 40,
-            maxZoom: 17,
-            minOpacity: 0.3,
-            gradient: {
-                0.0: '#00CC00',  // Verde - Baja demanda
-                0.25: '#FFFF00', // Amarillo - Media demanda
-                0.5: '#FF8800',  // Naranja - Alta demanda
-                0.75: '#FF4400', // Rojo-naranja - Muy alta
-                1.0: '#FF0000'   // Rojo puro - Máxima demanda
-            }
-        }).addTo(mapInstance);
+            const estilo = estilosDemanda[zona.demanda] || estilosDemanda['media'];
 
-        // Agregar efecto de transición suave
-        heatmapLayer.setStyle({ opacity: 0 });
-        setTimeout(() => {
-            if (heatmapLayer) {
-                heatmapLayer.setStyle({ opacity: 1 });
-            }
-        }, 100);
-
-        // Agregar marcadores con información de zonas
-        horario.zonas.forEach(zona => {
-            const colorPunto = { 'muy_alta': '#FF0000', 'alta': '#FF8800', 'media': '#FFFF00', 'baja': '#00CC00' }[zona.demanda];
-            
-            const marker = L.circleMarker([zona.lat, zona.lng], {
-                radius: 8,
-                fillColor: colorPunto,
-                color: '#000',
-                weight: 2,
-                opacity: 1,
-                fillOpacity: 0.8
+            const polygon = L.polygon(coords, {
+                fillColor: estilo.fillColor,
+                fillOpacity: estilo.fillOpacity,
+                color: estilo.color,
+                weight: estilo.weight,
+                dashArray: '6, 4',
+                opacity: 0.9
             }).addTo(mapInstance);
 
             const popupContent = `
                 <div class="popup-content">
                     <h4>${zona.nombre}</h4>
-                    <p><span class="popup-label">Demanda:</span> ${zona.demanda.toUpperCase()}</p>
+                    <p><span class="popup-label">Demanda:</span> ${estilo.emoji} ${estilo.label}</p>
                     <p><span class="popup-label">Razón:</span> ${zona.razon}</p>
                     <p><span class="popup-label">Mejor horario:</span> ${zona.mejorHorario}</p>
                 </div>
             `;
 
-            marker.bindPopup(popupContent);
+            polygon.bindPopup(popupContent);
+
+            // Efecto de aparición suave
+            polygon.setStyle({ fillOpacity: 0 });
+            setTimeout(() => {
+                polygon.setStyle({ fillOpacity: estilo.fillOpacity });
+            }, 50);
+
+            polygonLayers.push(polygon);
         });
+
+        // 3. Renderizar heatmap de fondo con opacidad reducida
+        const puntosCalor = horario.heatmapPoints || [];
+        if (puntosCalor.length > 0) {
+            heatmapLayer = L.heatLayer(puntosCalor, {
+                radius: 55,
+                blur: 45,
+                maxZoom: 17,
+                minOpacity: 0.15,
+                gradient: {
+                    0.0: '#00CC00',
+                    0.25: '#FFFF00',
+                    0.5: '#FF8800',
+                    0.75: '#FF4400',
+                    1.0: '#FF0000'
+                }
+            }).addTo(mapInstance);
+
+            // Transición suave
+            heatmapLayer.setStyle({ opacity: 0 });
+            setTimeout(() => {
+                if (heatmapLayer) {
+                    heatmapLayer.setStyle({ opacity: 0.5 });
+                }
+            }, 150);
+        }
     }
 
     // Inicializar mapa cuando la página cargue completamente
