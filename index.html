@@ -1,0 +1,1397 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Registro de Ganancias · inDrive</title>
+    <meta name="description" content="Controla tus viajes, ingresos y gastos como conductor de inDrive, y descarga tu reporte en PDF.">
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'><rect width='64' height='64' rx='16' fill='%230A0C10'/><path d='M13 39 L25 27 L35 35 L51 17' stroke='%23C1F11D' stroke-width='6' fill='none' stroke-linecap='round' stroke-linejoin='round'/><circle cx='51' cy='17' r='4' fill='%23C1F11D'/></svg>">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+    <!-- Librerías para generar PDF con Tablas profesionales -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+    <!-- Leaflet.js para mapas interactivos -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+    <!-- Leaflet Heat para heatmaps -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.heat/0.2.0/leaflet-heat.min.js"></script>
+    <style>
+        :root {
+            --indrive-black: #0A0C10;
+            --indrive-black-soft: #15181E;
+            --indrive-lime: #C1F11D;
+            --indrive-lime-deep: #93BE0C;
+            --indrive-gray: #F2F4F7;
+            --text-dark: #1A1D23;
+            --text-muted: #5A6472;
+            --color-success: #16A34A;
+            --color-danger: #DC2626;
+            --color-warning: #F59E0B;
+            --border-subtle: #E3E7ED;
+            --surface: #FFFFFF;
+            --radius-sm: 8px;
+            --radius-md: 14px;
+            --radius-lg: 20px;
+            --radius-xl: 26px;
+            --shadow-sm: 0 1px 3px rgba(16, 24, 40, 0.06);
+            --shadow-md: 0 6px 18px rgba(16, 24, 40, 0.09);
+            --shadow-lg: 0 18px 44px rgba(16, 24, 40, 0.15);
+            --shadow-xl: 0 32px 72px rgba(5, 6, 10, 0.38);
+            --ease: cubic-bezier(0.4, 0, 0.2, 1);
+            --font-display: 'Space Grotesk', 'Segoe UI', Roboto, sans-serif;
+            --font-sans: 'Inter', 'Segoe UI', Roboto, sans-serif;
+            --font-mono: 'JetBrains Mono', 'Courier New', monospace;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: var(--font-sans);
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        html { scroll-behavior: smooth; }
+
+        body {
+            background: var(--indrive-gray);
+            color: var(--text-dark);
+            line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        h1, h2, .login-btn, .btn-add, .pdf-btn, .logout-btn, .schedule-item .time {
+            font-family: var(--font-display);
+        }
+
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes slideInMotivation {
+            from { 
+                opacity: 0; 
+                transform: translateY(-20px) scale(0.95);
+            }
+            to { 
+                opacity: 1; 
+                transform: translateY(0) scale(1);
+            }
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+                scroll-behavior: auto !important;
+            }
+        }
+
+        @media (min-width: 640px) {
+            body {
+                background:
+                    radial-gradient(ellipse 900px 500px at 18% -8%, rgba(193, 241, 29, 0.06), transparent 60%),
+                    linear-gradient(165deg, #14171D 0%, #05060A 100%);
+                padding: 48px 20px;
+                display: flex;
+                justify-content: center;
+                align-items: flex-start;
+                min-height: 100vh;
+            }
+        }
+
+        .app-container {
+            max-width: 500px;
+            width: 100%;
+            margin: 0 auto;
+            background: var(--surface);
+            min-height: 100vh;
+            box-shadow: var(--shadow-sm);
+            position: relative;
+        }
+
+        @media (min-width: 640px) {
+            .app-container {
+                min-height: auto;
+                max-height: calc(100vh - 96px);
+                overflow-y: auto;
+                border-radius: var(--radius-xl);
+                box-shadow: var(--shadow-xl);
+                scrollbar-width: thin;
+            }
+        }
+
+        .app-container::-webkit-scrollbar, .trip-list::-webkit-scrollbar { width: 6px; }
+        .app-container::-webkit-scrollbar-thumb, .trip-list::-webkit-scrollbar-thumb {
+            background: rgba(10, 12, 16, 0.2); border-radius: 999px;
+        }
+        .app-container::-webkit-scrollbar-track, .trip-list::-webkit-scrollbar-track { background: transparent; }
+
+        /* HEADER APP */
+        .app-header {
+            background: linear-gradient(135deg, var(--indrive-black-soft), var(--indrive-black));
+            color: var(--indrive-lime); padding: 22px 20px; text-align: center;
+            position: sticky; top: 0; z-index: 100;
+            box-shadow: var(--shadow-md);
+        }
+        .app-header h1 { font-size: 1.35rem; font-weight: 700; letter-spacing: -0.01em; }
+        .app-header p { color: rgba(255, 255, 255, 0.72); font-size: 0.8rem; margin-top: 6px; font-weight: 400; }
+
+        /* SECCIONES */
+        .section { padding: 26px 20px; border-bottom: 8px solid var(--indrive-gray); }
+        .section-title {
+            font-size: 1.08rem; font-weight: 600; margin-bottom: 18px;
+            display: flex; align-items: center; gap: 10px; letter-spacing: -0.01em;
+        }
+
+        /* TARJETAS INFO */
+        .cards-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .info-card {
+            background: var(--indrive-gray); padding: 16px; border-radius: var(--radius-md);
+            border-left: 3px solid var(--indrive-lime);
+            transition: transform 150ms var(--ease), box-shadow 150ms var(--ease);
+        }
+        .info-card span {
+            font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase;
+            letter-spacing: 0.05em; display: block; margin-bottom: 6px; font-weight: 600;
+        }
+        .info-card strong {
+            font-size: 1.05rem; color: var(--indrive-black); display: block;
+            font-family: var(--font-mono); font-variant-numeric: tabular-nums;
+        }
+        .edit-input {
+            width: 100%; background: transparent; border: none; border-bottom: 2px dashed #A6ACB5;
+            font-size: 1.05rem; font-weight: 700; color: var(--indrive-black); padding: 2px 0;
+            font-family: var(--font-mono); font-variant-numeric: tabular-nums;
+        }
+        .edit-input:focus { outline: none; border-bottom: 2px solid var(--indrive-black); }
+
+        /* FORMULARIO FINANZAS */
+        .fin-form { display: grid; grid-template-columns: 1fr; gap: 12px; }
+        .fin-form input {
+            width: 100%; padding: 15px 16px; border: 1.5px solid var(--border-subtle);
+            border-radius: var(--radius-md); font-size: 1rem; background: var(--indrive-gray);
+            color: var(--text-dark);
+            transition: border-color 180ms var(--ease), box-shadow 180ms var(--ease), background 180ms var(--ease);
+        }
+        .fin-form input::placeholder { color: #9AA1AC; }
+        .fin-form input:focus {
+            border-color: var(--indrive-black); outline: none; background: var(--surface);
+            box-shadow: 0 0 0 4px rgba(10, 12, 16, 0.07);
+        }
+        .btn-add {
+            width: 100%; padding: 15px; background: var(--indrive-black); color: var(--indrive-lime);
+            border: none; border-radius: var(--radius-md); font-size: 1.02rem; font-weight: 700; cursor: pointer;
+            box-shadow: var(--shadow-sm);
+            transition: transform 150ms var(--ease), box-shadow 150ms var(--ease);
+        }
+        .btn-add:hover { transform: translateY(-1px); box-shadow: var(--shadow-md); }
+        .btn-add:active { transform: translateY(0); }
+        .btn-add:focus-visible, .pdf-btn:focus-visible { outline: 2px solid var(--indrive-black); outline-offset: 2px; }
+        .btn-save {
+            background: linear-gradient(135deg, var(--indrive-lime), var(--indrive-lime-deep));
+            color: var(--indrive-black); border: none; margin-top: 6px;
+        }
+
+        .trip-list {
+            margin: 15px 0; max-height: 250px; overflow-y: auto;
+            border: 1px solid var(--border-subtle); padding: 10px; border-radius: var(--radius-md);
+            background: #FAFBFC;
+        }
+        .trip-list:empty::before {
+            content: "Aún no has agregado viajes hoy."; display: block; text-align: center;
+            color: var(--text-muted); font-size: 0.87rem; margin-top: 20px;
+        }
+
+        /* RESUMEN */
+        .summary-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 20px; text-align: center; }
+        .sum-card {
+            background: var(--surface); border: 1.5px solid var(--border-subtle);
+            padding: 12px 8px; border-radius: var(--radius-md);
+            transition: transform 150ms var(--ease), box-shadow 150ms var(--ease);
+        }
+        .sum-card span { font-size: 0.68rem; color: var(--text-muted); display: block; font-weight: 500; }
+        .sum-card strong {
+            font-size: 0.96rem; display: block; margin-top: 6px;
+            font-family: var(--font-mono); font-variant-numeric: tabular-nums;
+        }
+        .daily-totals { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 15px 0; text-align: center; }
+        .daily-totals .sum-card strong { font-size: 1.12rem; }
+
+        @media (hover: hover) {
+            .info-card:hover, .sum-card:hover, .history-item:hover { box-shadow: var(--shadow-md); transform: translateY(-1px); }
+        }
+
+        /* HISTORIAL */
+        .history-item {
+            background: var(--surface); border: 1px solid var(--border-subtle); border-radius: var(--radius-md);
+            padding: 15px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center;
+            transition: transform 150ms var(--ease), box-shadow 150ms var(--ease);
+            animation: fadeInUp 320ms var(--ease) both;
+        }
+        .history-item .date { font-weight: 700; font-size: 0.89rem; }
+        .history-item .amounts {
+            font-size: 0.79rem; color: var(--text-muted); font-family: var(--font-mono);
+            font-variant-numeric: tabular-nums;
+        }
+        .history-item .neto {
+            font-weight: 700; color: var(--color-success); font-family: var(--font-mono);
+            font-variant-numeric: tabular-nums;
+        }
+        .history-item .delete-btn {
+            color: var(--color-danger); background: transparent; border: none;
+            font-size: 1.4rem; cursor: pointer; padding: 0 5px; line-height: 1;
+            transition: transform 150ms var(--ease);
+        }
+        .history-item .delete-btn:hover { transform: scale(1.15); }
+
+        /* HORARIOS MEJORADOS */
+        .schedule-container {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 8px;
+        }
+
+        .schedule-item {
+            position: relative;
+            background: var(--surface);
+            padding: 14px 16px 14px 32px;
+            margin-bottom: 4px;
+            border-radius: var(--radius-md);
+            box-shadow: var(--shadow-sm);
+            border-left: 4px solid var(--indrive-lime);
+            transition: all 150ms var(--ease);
+        }
+
+        .schedule-item.peak {
+            background: linear-gradient(135deg, rgba(193, 241, 29, 0.08), rgba(147, 190, 12, 0.04));
+            border-left-color: var(--color-warning);
+        }
+
+        .schedule-item::before {
+            content: '';
+            position: absolute; left: 10px; top: 22px;
+            width: 11px; height: 11px; border-radius: 50%;
+            background: var(--indrive-lime); border: 2px solid var(--indrive-black);
+            z-index: 2;
+        }
+
+        .schedule-item.peak::before {
+            background: var(--color-warning);
+            animation: pulse 2s infinite;
+        }
+
+        .schedule-item::after {
+            content: '';
+            position: absolute; left: 14.5px; top: 33px;
+            width: 2px; height: calc(100% - 10px);
+            background: var(--border-subtle);
+            z-index: 1;
+        }
+        .schedule-item:last-child::after { display: none; }
+        
+        .schedule-item .time { 
+            font-weight: 700; font-size: 0.9rem; color: var(--indrive-black); 
+            display: block; margin-bottom: 3px; 
+        }
+        
+        .schedule-item .task { 
+            font-size: 0.84rem; color: var(--text-muted); 
+        }
+
+        .schedule-item .peak-badge {
+            display: inline-block;
+            background: var(--color-warning);
+            color: white;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.65rem;
+            font-weight: 700;
+            margin-top: 4px;
+            text-transform: uppercase;
+        }
+
+        .schedule-item .earnings-estimate {
+            font-size: 0.75rem;
+            color: var(--color-success);
+            font-weight: 600;
+            margin-top: 4px;
+        }
+
+        /* MODAL MOTIVACIÓN */
+        .motivation-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+            animation: fadeInUp 300ms var(--ease);
+        }
+
+        .motivation-modal.show {
+            display: flex;
+        }
+
+        .motivation-content {
+            background: var(--surface);
+            border-radius: var(--radius-lg);
+            padding: 32px 24px;
+            max-width: 400px;
+            text-align: center;
+            box-shadow: var(--shadow-xl);
+            animation: slideInMotivation 400ms var(--ease);
+            position: relative;
+        }
+
+        .motivation-content .close-btn {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            background: transparent;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: var(--text-muted);
+            transition: color 150ms var(--ease);
+        }
+
+        .motivation-content .close-btn:hover {
+            color: var(--text-dark);
+        }
+
+        .motivation-content .emoji {
+            font-size: 3rem;
+            margin-bottom: 12px;
+        }
+
+        .motivation-content h3 {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: var(--indrive-black);
+            margin-bottom: 12px;
+            font-family: var(--font-display);
+        }
+
+        .motivation-content p {
+            font-size: 0.95rem;
+            color: var(--text-dark);
+            line-height: 1.6;
+            margin-bottom: 20px;
+        }
+
+        .motivation-content .btn-close-motivation {
+            background: linear-gradient(135deg, var(--indrive-lime), var(--indrive-lime-deep));
+            color: var(--indrive-black);
+            border: none;
+            padding: 12px 24px;
+            border-radius: var(--radius-md);
+            font-weight: 700;
+            cursor: pointer;
+            transition: transform 150ms var(--ease);
+        }
+
+        .motivation-content .btn-close-motivation:hover {
+            transform: translateY(-2px);
+        }
+
+        .pdf-btn {
+            width: 100%; padding: 16px; background: var(--indrive-black); color: var(--indrive-lime);
+            border: none; border-radius: var(--radius-md); font-size: 1.05rem; font-weight: 700;
+            cursor: pointer; margin-top: 20px;
+            display: flex; align-items: center; justify-content: center; gap: 10px;
+            transition: all 150ms var(--ease);
+        }
+        .pdf-btn:hover { background: var(--indrive-black-soft); box-shadow: var(--shadow-md); }
+
+        /* MAPA INTELIGENTE DE DEMANDA */
+        .map-section {
+            background: var(--surface);
+            border-radius: var(--radius-lg);
+            overflow: hidden;
+            box-shadow: var(--shadow-md);
+        }
+
+        .map-header {
+            background: linear-gradient(135deg, var(--indrive-black-soft), var(--indrive-black));
+            color: var(--indrive-lime);
+            padding: 16px 20px;
+            border-bottom: 2px solid var(--indrive-lime);
+        }
+
+        .map-header h3 {
+            font-size: 1.1rem;
+            font-weight: 700;
+            margin-bottom: 8px;
+            font-family: var(--font-display);
+        }
+
+        .map-status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.9rem;
+            margin-bottom: 6px;
+        }
+
+        .map-status .emoji {
+            font-size: 1.2rem;
+        }
+
+        .map-time {
+            font-size: 0.8rem;
+            color: rgba(255, 255, 255, 0.8);
+        }
+
+        .map-container {
+            position: relative;
+            height: 400px;
+            width: 100%;
+        }
+
+        #demandaMap {
+            width: 100%;
+            height: 100%;
+            border-radius: 0;
+        }
+
+        .map-controls {
+            position: absolute;
+            bottom: 16px;
+            right: 16px;
+            z-index: 400;
+            display: flex;
+            gap: 8px;
+            flex-direction: column;
+        }
+
+        .map-btn {
+            background: var(--surface);
+            border: 2px solid var(--indrive-lime);
+            color: var(--indrive-black);
+            width: 40px;
+            height: 40px;
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 1.1rem;
+            transition: all 150ms var(--ease);
+            box-shadow: var(--shadow-md);
+        }
+
+        .map-btn:hover {
+            background: var(--indrive-lime);
+            color: var(--indrive-black);
+            transform: scale(1.1);
+        }
+
+        .map-legend {
+            position: absolute;
+            bottom: 16px;
+            left: 16px;
+            background: var(--surface);
+            border: 2px solid var(--indrive-lime);
+            border-radius: var(--radius-md);
+            padding: 12px 16px;
+            z-index: 400;
+            box-shadow: var(--shadow-md);
+            font-size: 0.8rem;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 6px;
+            font-weight: 500;
+        }
+
+        .legend-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .legend-dot {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            border: 2px solid var(--indrive-black);
+        }
+
+        .popup-content {
+            font-size: 0.85rem;
+            min-width: 200px;
+        }
+
+        .popup-content h4 {
+            font-weight: 700;
+            margin-bottom: 6px;
+            color: var(--indrive-black);
+            font-family: var(--font-display);
+        }
+
+        .popup-content p {
+            margin: 4px 0;
+            color: var(--text-dark);
+        }
+
+        .popup-label {
+            font-weight: 600;
+            color: var(--text-muted);
+            font-size: 0.75rem;
+            text-transform: uppercase;
+        }
+
+        @media (max-width: 640px) {
+            .map-container {
+                height: 300px;
+            }
+
+            .map-legend {
+                font-size: 0.7rem;
+                padding: 8px 12px;
+            }
+
+            .legend-dot {
+                width: 12px;
+                height: 12px;
+            }
+
+            .map-controls {
+                bottom: 12px;
+                right: 12px;
+            }
+
+            .map-btn {
+                width: 36px;
+                height: 36px;
+                font-size: 1rem;
+            }
+        }
+
+        .footer { padding: 30px 20px; text-align: center; color: #9AA1AC; font-size: 0.75rem; }
+
+        .schedule-info-box {
+            background: linear-gradient(135deg, rgba(193, 241, 29, 0.1), rgba(147, 190, 12, 0.05));
+            border-left: 4px solid var(--indrive-lime);
+            padding: 12px 16px;
+            border-radius: var(--radius-md);
+            margin-bottom: 16px;
+            font-size: 0.85rem;
+            color: var(--text-dark);
+        }
+
+        .schedule-info-box strong {
+            color: var(--indrive-black);
+            display: block;
+            margin-bottom: 4px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="app-container">
+    <!-- APP PRINCIPAL -->
+    <div id="pantallaApp">
+        <header class="app-header">
+            <h1>Registro de Ganancias</h1>
+            <p>Sistema de Control · inDrive</p>
+        </header>
+
+        <section class="section">
+            <h2 class="section-title">🎯 Objetivos Diarios</h2>
+            <div class="cards-grid">
+                <div class="info-card">
+                    <span>Meta Facturación</span>
+                    <strong>$150.000 - $200.000</strong>
+                </div>
+                <div class="info-card">
+                    <span>Costos Fijos</span>
+                    <input type="text" id="metaCost" class="edit-input" value="$65.000" onchange="guardarMetas()">
+                </div>
+            </div>
+        </section>
+
+        <section class="section">
+            <h2 class="section-title">💸 Registro de Viajes</h2>
+            <div class="fin-form">
+                <input type="text" id="valorViaje" placeholder="Valor del viaje ($)" inputmode="numeric">
+                <button class="btn-add" id="btnAgregarViaje">+ Agregar Viaje</button>
+            </div>
+            
+            <div class="trip-list" id="listaViajes"></div>
+            
+            <div class="daily-totals">
+                <div class="sum-card">
+                    <span>Viajes</span>
+                    <strong id="cantViajes">0</strong>
+                </div>
+                <div class="sum-card">
+                    <span>Subtotal</span>
+                    <strong id="totalDia">$0</strong>
+                </div>
+            </div>
+
+            <div class="fin-form" style="margin-top: 15px; border-top: 1px solid var(--border-subtle); padding-top: 15px;">
+                <input type="date" id="fecha">
+                <input type="text" id="gastos" placeholder="Gastos del día (Gasolina, etc.)" inputmode="numeric">
+                <button class="btn-add btn-save" id="btnGuardarDia">💾 Guardar Día en Historial</button>
+            </div>
+        </section>
+
+        <section class="section">
+            <h2 class="section-title">📊 Resumen General</h2>
+            <div class="summary-grid">
+                <div class="sum-card">
+                    <span>Ingresos</span>
+                    <strong id="total-ganancias" style="color: var(--color-success);">$0</strong>
+                </div>
+                <div class="sum-card">
+                    <span>Gastos</span>
+                    <strong id="total-gastos" style="color: var(--color-danger);">$0</strong>
+                </div>
+                <div class="sum-card">
+                    <span>Neto</span>
+                    <strong id="total-neto">$0</strong>
+                </div>
+            </div>
+            
+            <div id="historialLista"></div>
+
+            <button class="pdf-btn" id="btnPdf">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                Descargar Reporte PDF
+            </button>
+        </section>
+
+        <section class="section">
+            <h2 class="section-title">⏰ Plan de Horarios Optimizado</h2>
+            
+            <div class="schedule-info-box">
+                <strong>📍 Estrategia para Bucaramanga 2026</strong>
+                Horario extenso diseñado para maximizar ganancias en zonas de alta demanda: Centro, Cabecera, Cañaveral y eventos especiales.
+            </div>
+
+            <div class="schedule-container">
+                <!-- BLOQUE MAÑANA TEMPRANO -->
+                <div class="schedule-item peak">
+                    <span class="time">05:30 AM - 08:00 AM</span>
+                    <span class="task">🔥 Bloque Madrugada Premium: Traslados a trabajos, universidades. Alta demanda, tarifas dinámicas.</span>
+                    <span class="peak-badge">⭐ PICO MÁXIMO</span>
+                    <span class="earnings-estimate">Potencial: $45.000 - $60.000</span>
+                </div>
+
+                <!-- DESCANSO CORTO -->
+                <div class="schedule-item">
+                    <span class="time">08:00 AM - 09:00 AM</span>
+                    <span class="task">☕ Descanso Rápido: Café, revisión de vehículo, revisar app.</span>
+                </div>
+
+                <!-- BLOQUE MAÑANA -->
+                <div class="schedule-item peak">
+                    <span class="time">09:00 AM - 12:00 PM</span>
+                    <span class="task">💼 Bloque Mañana: Viajes corporativos, diligencias, zona Centro y Cabecera.</span>
+                    <span class="peak-badge">⭐ PICO ALTO</span>
+                    <span class="earnings-estimate">Potencial: $50.000 - $70.000</span>
+                </div>
+
+                <!-- ALMUERZO ESTRATÉGICO -->
+                <div class="schedule-item">
+                    <span class="time">12:00 PM - 01:30 PM</span>
+                    <span class="task">🍽️ Almuerzo y Mantenimiento: Comer, revisar combustible, descanso mental.</span>
+                </div>
+
+                <!-- BLOQUE TARDE BAJA -->
+                <div class="schedule-item">
+                    <span class="time">01:30 PM - 03:00 PM</span>
+                    <span class="task">🚗 Bloque Tarde Baja: Viajes locales, esperar en zonas estratégicas (centros comerciales).</span>
+                    <span class="earnings-estimate">Potencial: $25.000 - $35.000</span>
+                </div>
+
+                <!-- PAUSA TÉCNICA -->
+                <div class="schedule-item">
+                    <span class="time">03:00 PM - 04:00 PM</span>
+                    <span class="task">⚡ Pausa Técnica: Recarga de energía, snack, revisar ganancias del día.</span>
+                </div>
+
+                <!-- BLOQUE TARDE-NOCHE PICO -->
+                <div class="schedule-item peak">
+                    <span class="time">04:00 PM - 07:00 PM</span>
+                    <span class="task">🔥 Bloque Tarde-Noche: Hora pico de retorno a casa, viajes largos, zona Cañaveral.</span>
+                    <span class="peak-badge">⭐ PICO MÁXIMO</span>
+                    <span class="earnings-estimate">Potencial: $55.000 - $75.000</span>
+                </div>
+
+                <!-- CENA RÁPIDA -->
+                <div class="schedule-item">
+                    <span class="time">07:00 PM - 08:00 PM</span>
+                    <span class="task">🍕 Cena Rápida: Alimentación y descanso breve (30 min máximo).</span>
+                </div>
+
+                <!-- BLOQUE NOCHE FINAL -->
+                <div class="schedule-item peak">
+                    <span class="time">08:00 PM - 10:30 PM</span>
+                    <span class="task">🌙 Bloque Noche Final: Viajes nocturnos, retorno de eventos, zonas de diversión.</span>
+                    <span class="peak-badge">⭐ PICO ALTO</span>
+                    <span class="earnings-estimate">Potencial: $40.000 - $55.000</span>
+                </div>
+
+                <!-- CIERRE OPCIONAL -->
+                <div class="schedule-item">
+                    <span class="time">10:30 PM - 11:00 PM</span>
+                    <span class="task">✅ Cierre y Registro: Guardar datos del día, contar ganancias, planificar mañana.</span>
+                </div>
+            </div>
+
+            <div class="schedule-info-box" style="margin-top: 16px;">
+                <strong>💡 Recomendaciones Estratégicas:</strong>
+                • Prioriza Centro, Cabecera y Cañaveral (mayor demanda)<br>
+                • Evita carreras &lt; 3 minutos (pérdida de tiempo)<br>
+                • Septiembre: Feria Bonita = demanda máxima<br>
+                • Lunes-Viernes: Mejor que fin de semana<br>
+                • Recarga combustible en horas bajas<br>
+                • Meta diaria: $150.000 - $200.000 (alcanzable)
+            </div>
+        </section>
+
+        <section class="section">
+            <div class="map-section">
+                <div class="map-header">
+                    <h3>🗺️ Mapa Inteligente de Demanda</h3>
+                    <div class="map-status">
+                        <span class="emoji" id="statusEmoji">🔥</span>
+                        <span id="statusText">Hora pico</span>
+                    </div>
+                    <div class="map-time" id="currentTime">05:00 - 08:00 (Trabajadores y universidades)</div>
+                </div>
+                <div class="map-container">
+                    <div id="demandaMap"></div>
+                    <div class="map-legend">
+                        <div class="legend-item">
+                            <div class="legend-dot" style="background: #FF0000;"></div>
+                            <span>Muy alta demanda</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-dot" style="background: #FF8800;"></div>
+                            <span>Alta demanda</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-dot" style="background: #FFFF00;"></div>
+                            <span>Media demanda</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-dot" style="background: #00CC00;"></div>
+                            <span>Baja demanda</span>
+                        </div>
+                        <div class="legend-item">
+                            <div class="legend-dot" style="background: #CCCCCC;"></div>
+                            <span>Sin datos</span>
+                        </div>
+                    </div>
+                    <div class="map-controls">
+                        <button class="map-btn" id="centerMapBtn" title="Centrar mapa">📍</button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <footer class="footer">
+            <p>© 2026 Registro de Conductor · inDrive Profesional</p>
+            <p style="margin-top: 5px; opacity: 0.7;">Los datos se guardan automáticamente en este navegador.</p>
+        </footer>
+    </div>
+</div>
+
+<!-- MODAL DE MOTIVACIÓN -->
+<div class="motivation-modal" id="motivationModal">
+    <div class="motivation-content">
+        <button class="close-btn" onclick="cerrarMotivacion()">×</button>
+        <div class="emoji" id="motivationEmoji">🚀</div>
+        <h3 id="motivationTitle">¡Excelente trabajo!</h3>
+        <p id="motivationText">Mensaje motivacional aquí</p>
+        <button class="btn-close-motivation" onclick="cerrarMotivacion()">Continuar</button>
+    </div>
+</div>
+
+<script>
+    // MENSAJES DE MOTIVACIÓN - 10 VERSÍCULOS BÍBLICOS
+    const mensajesMotivacion = [
+        { emoji: "📖", titulo: "Filipenses 4:13", mensaje: "Todo lo puedo en Cristo que me fortalece. Tu fortaleza viene de Él, no de ti mismo. ¡Adelante!" },
+        { emoji: "✨", titulo: "Proverbios 22:29", mensaje: "¿Has visto a un hombre diligente en su trabajo? Se presentará ante reyes. Tu dedicación te llevará lejos." },
+        { emoji: "💪", titulo: "Deuteronomio 31:6", mensaje: "Esfuérzate y sé valiente, no temas ni desmayes, porque el Señor tu Dios está contigo. Hoy es tu día." },
+        { emoji: "🙏", titulo: "Proverbios 14:23", mensaje: "En todo trabajo hay ganancia, pero el mero hablar solo trae pobreza. Tu esfuerzo hoy trae fruto mañana." },
+        { emoji: "🌟", titulo: "Colosenses 3:23", mensaje: "Todo lo que hagas, hazlo de corazón, como para el Señor y no para los hombres. Trabaja con propósito." },
+        { emoji: "🔥", titulo: "Salmos 27:14", mensaje: "Espera en el Señor, esfuérzate y alienta tu corazón; sí, espera en el Señor. La perseverancia trae victoria." },
+        { emoji: "💎", titulo: "Proverbios 10:4", mensaje: "La mano negligente empobrece, pero la mano del diligente enriquece. Tu trabajo hoy es tu riqueza mañana." },
+        { emoji: "⚡", titulo: "Isaías 40:31", mensaje: "Los que esperan en el Señor renovarán sus fuerzas; se remontarán con alas como de águila. ¡Vuela alto!" },
+        { emoji: "🏆", titulo: "1 Corintios 15:58", mensaje: "Por tanto, mis queridos hermanos, manténganse firmes, constantes, abundando siempre en la obra del Señor. Hoy es tu victoria." },
+        { emoji: "👑", titulo: "Proverbios 13:4", mensaje: "El perezoso desea y nada consigue, pero los deseos del diligente serán satisfechos. Tú eres diligente, tú triunfarás." }
+    ];
+
+    // Sistema de almacenamiento persistente mejorado
+    const SafeStorage = {
+        set: (key, value) => {
+            try {
+                localStorage.setItem(key, typeof value === 'string' ? value : JSON.stringify(value));
+            } catch (e) { console.error("Error guardando en localStorage", e); }
+        },
+        get: (key) => {
+            try {
+                const item = localStorage.getItem(key);
+                if (!item) return null;
+                try { return JSON.parse(item); } catch { return item; }
+            } catch (e) {
+                console.error("Error leyendo de localStorage", e);
+                return null;
+            }
+        }
+    };
+
+    let registros = [];
+    let viajesDelDia = [];
+
+    document.addEventListener('DOMContentLoaded', function() {
+        // Formateo automático de miles mientras se escribe
+        const inputsMoneda = ['valorViaje', 'gastos', 'metaCost'];
+        inputsMoneda.forEach(id => {
+            const el = document.getElementById(id);
+            el.addEventListener('input', function(e) {
+                let value = e.target.value.replace(/\D/g, '');
+                if (value) {
+                    e.target.value = new Intl.NumberFormat('es-CO').format(value);
+                }
+            });
+        });
+
+        // Cargar datos al iniciar
+        cargarDatos();
+
+        // Agregar viaje individual
+        document.getElementById('btnAgregarViaje').addEventListener('click', function() {
+            const inputViaje = document.getElementById('valorViaje');
+            const valorClean = inputViaje.value.replace(/\./g, '');
+            const valor = parseFloat(valorClean) || 0;
+
+            if (valor <= 0) { alert("Ingresa un valor válido para el viaje."); return; }
+
+            viajesDelDia.push(valor);
+            inputViaje.value = '';
+            
+            // Guardar estado temporal de viajes del día
+            SafeStorage.set('indrive_viajes_hoy', viajesDelDia);
+            
+            renderizarViajes();
+        });
+
+        // Guardar todos los viajes del día en el historial
+        document.getElementById('btnGuardarDia').addEventListener('click', function() {
+            const fecha = document.getElementById('fecha').value;
+            const ganancias = viajesDelDia.reduce((a, b) => a + b, 0);
+            
+            const gastosClean = document.getElementById('gastos').value.replace(/\./g, '');
+            const gastos = parseFloat(gastosClean) || 0;
+
+            if (!fecha) { alert("Selecciona una fecha."); return; }
+            if (viajesDelDia.length === 0) { alert("Agrega al menos un viaje para guardar el día."); return; }
+
+            registros.push({ fecha, ganancias, gastos, numViajes: viajesDelDia.length });
+            guardarDatos();
+            
+            // Limpiar el formulario del día y el almacenamiento temporal
+            viajesDelDia = [];
+            SafeStorage.set('indrive_viajes_hoy', []);
+            
+            document.getElementById('gastos').value = '';
+            renderizarViajes();
+            renderizarTodo();
+            
+            // Mostrar mensaje de motivación aleatorio
+            mostrarMotivacionAleatoria();
+        });
+
+        // PDF
+        document.getElementById('btnPdf').addEventListener('click', function() {
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            
+            doc.setFillColor(0, 0, 0);
+            doc.rect(0, 0, 210, 30, 'F');
+            
+            doc.setTextColor(193, 241, 29);
+            doc.setFontSize(22);
+            doc.setFont(undefined, 'bold');
+            doc.text("Plan de Trabajo - InDrive Bucaramanga", 105, 15, { align: 'center' });
+            
+            doc.setTextColor(255, 255, 255);
+            doc.setFontSize(11);
+            doc.setFont(undefined, 'normal');
+            doc.text("Reporte de Actividad Optimizado", 105, 23, { align: 'center' });
+
+            doc.setTextColor(0, 0, 0);
+            doc.setFontSize(14);
+            doc.setFont(undefined, 'bold');
+            doc.text("Objetivos Diarios", 14, 42);
+            
+            doc.setDrawColor(200);
+            doc.setFillColor(244, 244, 244);
+            doc.roundedRect(14, 46, 90, 20, 3, 3, 'FD');
+            doc.roundedRect(106, 46, 90, 20, 3, 3, 'FD');
+            
+            doc.setFontSize(9);
+            doc.setTextColor(100);
+            doc.text("META FACTURACIÓN (OPTIMIZADA)", 18, 52);
+            doc.text("COSTOS FIJOS", 110, 52);
+            
+            doc.setFontSize(11);
+            doc.setTextColor(0);
+            doc.setFont(undefined, 'bold');
+            doc.text("$150.000 - $200.000", 18, 60);
+            doc.text(document.getElementById('metaCost').value || "$65.000", 110, 60);
+            doc.setFont(undefined, 'normal');
+
+            doc.autoTable({
+                startY: 75,
+                head: [['Fecha', 'Nº Viajes', 'Ingresos', 'Gastos', 'Ganancia Neta']],
+                body: registros.map(reg => [
+                    reg.fecha,
+                    reg.numViajes || 1,
+                    formatearMoneda(reg.ganancias),
+                    formatearMoneda(reg.gastos),
+                    formatearMoneda(reg.ganancias - reg.gastos)
+                ]),
+                theme: 'striped',
+                headStyles: { fillColor: [0, 0, 0], textColor: [193, 241, 29], fontStyle: 'bold' },
+                styles: { fontSize: 10, cellPadding: 3 },
+                columnStyles: { 0: { cellWidth: 40 } }
+            });
+
+            let finalY = doc.lastAutoTable.finalY + 10;
+            let totalG = registros.reduce((a, b) => a + b.ganancias, 0);
+            let totalGastos = registros.reduce((a, b) => a + b.gastos, 0);
+            let totalNeto = totalG - totalGastos;
+
+            doc.setFontSize(11);
+            doc.setFont(undefined, 'bold');
+            doc.text("Total Ingresos:", 14, finalY);
+            doc.text(formatearMoneda(totalG), 60, finalY);
+            
+            doc.text("Total Gastos:", 14, finalY + 7);
+            doc.text(formatearMoneda(totalGastos), 60, finalY + 7);
+            
+            doc.text("Ganancia Neta Total:", 14, finalY + 14);
+            doc.text(formatearMoneda(totalNeto), 60, finalY + 14);
+            
+            doc.save("Mi_Plan_InDrive_Bucaramanga.pdf");
+        });
+    });
+
+    function cargarDatos() {
+        // Cargar historial
+        const data = SafeStorage.get('indrive_data_v2');
+        registros = data || [];
+        
+        // Cargar metas
+        const metas = SafeStorage.get('indrive_metas_v2');
+        if(metas) {
+            document.getElementById('metaCost').value = metas.cost || "$65.000";
+        }
+        
+        // Cargar viajes temporales del día (si existen)
+        const viajesHoy = SafeStorage.get('indrive_viajes_hoy');
+        viajesDelDia = viajesHoy || [];
+        
+        document.getElementById('fecha').valueAsDate = new Date();
+        renderizarViajes();
+        renderizarTodo();
+    }
+
+    function guardarMetas() {
+        const metas = { cost: document.getElementById('metaCost').value };
+        SafeStorage.set('indrive_metas_v2', metas);
+    }
+
+    function guardarDatos() {
+        SafeStorage.set('indrive_data_v2', registros);
+    }
+
+    function formatearMoneda(numero) {
+        return '$' + new Intl.NumberFormat('es-CO').format(numero);
+    }
+
+    function eliminarRegistro(index) {
+        if(confirm("¿Estás seguro de eliminar este registro del historial?")) {
+            registros.splice(index, 1);
+            guardarDatos();
+            renderizarTodo();
+        }
+    }
+
+    function eliminarViaje(index) {
+        viajesDelDia.splice(index, 1);
+        SafeStorage.set('indrive_viajes_hoy', viajesDelDia);
+        renderizarViajes();
+    }
+
+    function renderizarViajes() {
+        const lista = document.getElementById('listaViajes');
+        lista.innerHTML = '';
+        
+        let totalDia = 0;
+        viajesDelDia.forEach((val, index) => {
+            totalDia += val;
+            const div = document.createElement('div');
+            div.className = 'history-item';
+            div.style.padding = '8px 15px';
+            div.style.marginBottom = '5px';
+            div.innerHTML = `
+                <div>
+                    <div class="date">Viaje ${index + 1}</div>
+                    <div class="neto" style="color: green;">${formatearMoneda(val)}</div>
+                </div>
+                <button class="delete-btn" onclick="eliminarViaje(${index})">×</button>
+            `;
+            lista.appendChild(div);
+        });
+
+        document.getElementById('cantViajes').innerText = viajesDelDia.length;
+        document.getElementById('totalDia').innerText = formatearMoneda(totalDia);
+    }
+
+    function renderizarTodo() {
+        const lista = document.getElementById('historialLista');
+        lista.innerHTML = '';
+        
+        let totalG = 0, totalGastos = 0;
+
+        // Mostrar del más reciente al más antiguo
+        [...registros].reverse().forEach((reg, i) => {
+            const index = registros.length - 1 - i;
+            const neto = reg.ganancias - reg.gastos;
+            totalG += reg.ganancias;
+            totalGastos += reg.gastos;
+
+            const div = document.createElement('div');
+            div.className = 'history-item';
+            div.innerHTML = `
+                <div>
+                    <div class="date">${reg.fecha} (${reg.numViajes || 1} viajes)</div>
+                    <div class="amounts">Entró: <span style="color:green;">${formatearMoneda(reg.ganancias)}</span> | Salió: <span style="color:red;">${formatearMoneda(reg.gastos)}</span></div>
+                    <div class="neto">Neto: ${formatearMoneda(neto)}</div>
+                </div>
+                <button class="delete-btn" onclick="eliminarRegistro(${index})">×</button>
+            `;
+            lista.appendChild(div);
+        });
+
+        document.getElementById('total-ganancias').innerText = formatearMoneda(totalG);
+        document.getElementById('total-gastos').innerText = formatearMoneda(totalGastos);
+        document.getElementById('total-neto').innerText = formatearMoneda(totalG - totalGastos);
+    }
+
+    // FUNCIÓN PARA MOSTRAR MOTIVACIÓN ALEATORIA
+    function mostrarMotivacionAleatoria() {
+        const indiceAleatorio = Math.floor(Math.random() * mensajesMotivacion.length);
+        const mensaje = mensajesMotivacion[indiceAleatorio];
+        
+        document.getElementById('motivationEmoji').textContent = mensaje.emoji;
+        document.getElementById('motivationTitle').textContent = mensaje.titulo;
+        document.getElementById('motivationText').textContent = mensaje.mensaje;
+        
+        const modal = document.getElementById('motivationModal');
+        modal.classList.add('show');
+        
+        // El modal permanece abierto hasta que el usuario haga clic en cerrar
+    }
+
+    function cerrarMotivacion() {
+        const modal = document.getElementById('motivationModal');
+        modal.classList.remove('show');
+    }
+
+    // Cerrar modal al hacer clic fuera
+    document.addEventListener('click', function(event) {
+        const modal = document.getElementById('motivationModal');
+        if (event.target === modal) {
+            cerrarMotivacion();
+        }
+    });
+
+    // ========== SISTEMA DE MAPA INTELIGENTE DE DEMANDA ==========
+    
+    // Configuración de horarios y demanda
+    const horariosConfig = [
+        {
+            nombre: 'Madrugada',
+            emoji: '🌙',
+            rango: '00:00-05:00',
+            descripcion: 'Demanda nocturna (bares, discotecas, hospitales, terminales)',
+            zonas: [
+                { nombre: 'Centro Histórico', lat: 7.1255, lng: -73.1183, demanda: 'alta', razon: 'Bares y restaurantes nocturnos', mejorHorario: '22:00-03:00' },
+                { nombre: 'Cabecera', lat: 7.1180, lng: -73.1024, demanda: 'media', razon: 'Servicios 24h y hospitales', mejorHorario: '00:00-05:00' },
+                { nombre: 'Terminal de Transporte', lat: 7.1350, lng: -73.1100, demanda: 'alta', razon: 'Pasajeros nocturnos', mejorHorario: '22:00-05:00' }
+            ],
+            heatmapPoints: [
+                [7.1255, -73.1183, 0.8], [7.1260, -73.1180, 0.7], [7.1250, -73.1185, 0.75], [7.1265, -73.1175, 0.65],
+                [7.1180, -73.1024, 0.5], [7.1185, -73.1020, 0.45], [7.1175, -73.1028, 0.4], [7.1190, -73.1015, 0.35],
+                [7.1350, -73.1100, 0.7], [7.1355, -73.1095, 0.65], [7.1345, -73.1105, 0.6], [7.1360, -73.1090, 0.55],
+                [7.1200, -73.1150, 0.3], [7.1210, -73.1145, 0.25]
+            ]
+        },
+        {
+            nombre: 'Madrugada Premium',
+            emoji: '🔥',
+            rango: '05:00-08:00',
+            descripcion: 'Trabajadores y universidades',
+            zonas: [
+                { nombre: 'UIS Campus', lat: 7.1400, lng: -73.1250, demanda: 'muy_alta', razon: 'Estudiantes hacia universidad', mejorHorario: '06:30-08:00' },
+                { nombre: 'Centro Empresarial', lat: 7.1200, lng: -73.1150, demanda: 'muy_alta', razon: 'Trabajadores hacia oficinas', mejorHorario: '06:00-08:00' },
+                { nombre: 'Floridablanca', lat: 7.0697, lng: -73.0978, demanda: 'alta', razon: 'Traslados laborales', mejorHorario: '06:30-08:00' }
+            ],
+            heatmapPoints: [
+                [7.1400, -73.1250, 1.0], [7.1405, -73.1245, 0.95], [7.1395, -73.1255, 0.9], [7.1410, -73.1240, 0.85], [7.1390, -73.1260, 0.8],
+                [7.1200, -73.1150, 0.95], [7.1205, -73.1145, 0.9], [7.1195, -73.1155, 0.85], [7.1210, -73.1140, 0.8], [7.1190, -73.1160, 0.75],
+                [7.0697, -73.0978, 0.7], [7.0702, -73.0973, 0.65], [7.0692, -73.0983, 0.6], [7.0707, -73.0968, 0.55],
+                [7.1300, -73.1200, 0.5], [7.1310, -73.1190, 0.45], [7.1150, -73.1100, 0.4]
+            ]
+        },
+        {
+            nombre: 'Mañana',
+            emoji: '💼',
+            rango: '08:00-12:00',
+            descripcion: 'Oficinas y diligencias',
+            zonas: [
+                { nombre: 'Centro Comercial Cañaveral', lat: 7.1100, lng: -73.1050, demanda: 'alta', razon: 'Compras y diligencias', mejorHorario: '09:00-12:00' },
+                { nombre: 'Zona Administrativa', lat: 7.1250, lng: -73.1200, demanda: 'media', razon: 'Trámites y oficinas', mejorHorario: '09:00-11:00' },
+                { nombre: 'Girón Centro', lat: 7.1400, lng: -73.1900, demanda: 'media', razon: 'Diligencias locales', mejorHorario: '09:00-12:00' }
+            ],
+            heatmapPoints: [
+                [7.1100, -73.1050, 0.8], [7.1105, -73.1045, 0.75], [7.1095, -73.1055, 0.7], [7.1110, -73.1040, 0.65], [7.1090, -73.1060, 0.6],
+                [7.1250, -73.1200, 0.6], [7.1255, -73.1195, 0.55], [7.1245, -73.1205, 0.5], [7.1260, -73.1190, 0.45],
+                [7.1400, -73.1900, 0.5], [7.1405, -73.1895, 0.45], [7.1395, -73.1905, 0.4], [7.1410, -73.1890, 0.35],
+                [7.1200, -73.1150, 0.55], [7.1180, -73.1024, 0.4]
+            ]
+        },
+        {
+            nombre: 'Almuerzo',
+            emoji: '🍽️',
+            rango: '12:00-14:00',
+            descripcion: 'Almuerzos y centros comerciales',
+            zonas: [
+                { nombre: 'Centro Comercial Cacique', lat: 7.1150, lng: -73.1100, demanda: 'muy_alta', razon: 'Almuerzo y compras', mejorHorario: '12:00-14:00' },
+                { nombre: 'Zona Gastronómica', lat: 7.1200, lng: -73.1180, demanda: 'muy_alta', razon: 'Restaurantes y cafés', mejorHorario: '12:00-13:30' },
+                { nombre: 'Parque Caracolí', lat: 7.1050, lng: -73.1200, demanda: 'alta', razon: 'Centro comercial', mejorHorario: '12:00-14:00' }
+            ],
+            heatmapPoints: [
+                [7.1150, -73.1100, 1.0], [7.1155, -73.1095, 0.95], [7.1145, -73.1105, 0.9], [7.1160, -73.1090, 0.85], [7.1140, -73.1110, 0.8],
+                [7.1200, -73.1180, 0.95], [7.1205, -73.1175, 0.9], [7.1195, -73.1185, 0.85], [7.1210, -73.1170, 0.8], [7.1190, -73.1190, 0.75],
+                [7.1050, -73.1200, 0.75], [7.1055, -73.1195, 0.7], [7.1045, -73.1205, 0.65], [7.1060, -73.1190, 0.6],
+                [7.1100, -73.1050, 0.6], [7.1120, -73.1150, 0.5]
+            ]
+        },
+        {
+            nombre: 'Tarde Baja',
+            emoji: '☀️',
+            rango: '14:00-17:00',
+            descripcion: 'Demanda media',
+            zonas: [
+                { nombre: 'Zonas Residenciales', lat: 7.1300, lng: -73.1300, demanda: 'media', razon: 'Traslados locales', mejorHorario: '14:00-17:00' },
+                { nombre: 'Piedecuesta', lat: 7.1700, lng: -73.1800, demanda: 'baja', razon: 'Demanda moderada', mejorHorario: '14:00-17:00' },
+                { nombre: 'Floridablanca Sur', lat: 7.0500, lng: -73.0900, demanda: 'media', razon: 'Traslados internos', mejorHorario: '14:00-17:00' }
+            ],
+            heatmapPoints: [
+                [7.1300, -73.1300, 0.5], [7.1305, -73.1295, 0.45], [7.1295, -73.1305, 0.4], [7.1310, -73.1290, 0.35],
+                [7.1700, -73.1800, 0.3], [7.1705, -73.1795, 0.25], [7.1695, -73.1805, 0.2], [7.1710, -73.1790, 0.15],
+                [7.0500, -73.0900, 0.45], [7.0505, -73.0895, 0.4], [7.0495, -73.0905, 0.35], [7.0510, -73.0890, 0.3],
+                [7.1150, -73.1100, 0.35], [7.1200, -73.1150, 0.3]
+            ]
+        },
+        {
+            nombre: 'Hora Pico',
+            emoji: '🔥',
+            rango: '17:00-20:00',
+            descripcion: 'Hora pico de retorno a casa',
+            zonas: [
+                { nombre: 'Centro a Residenciales', lat: 7.1200, lng: -73.1150, demanda: 'muy_alta', razon: 'Retorno del trabajo', mejorHorario: '17:00-19:00' },
+                { nombre: 'Cañaveral', lat: 7.1100, lng: -73.1050, demanda: 'muy_alta', razon: 'Salida de centros comerciales', mejorHorario: '17:00-20:00' },
+                { nombre: 'Cabecera Salida', lat: 7.1180, lng: -73.1024, demanda: 'alta', razon: 'Retorno masivo', mejorHorario: '17:30-19:30' }
+            ],
+            heatmapPoints: [
+                [7.1200, -73.1150, 1.0], [7.1205, -73.1145, 0.95], [7.1195, -73.1155, 0.9], [7.1210, -73.1140, 0.85], [7.1190, -73.1160, 0.8],
+                [7.1100, -73.1050, 0.95], [7.1105, -73.1045, 0.9], [7.1095, -73.1055, 0.85], [7.1110, -73.1040, 0.8], [7.1090, -73.1060, 0.75],
+                [7.1180, -73.1024, 0.8], [7.1185, -73.1020, 0.75], [7.1175, -73.1028, 0.7], [7.1190, -73.1015, 0.65],
+                [7.1300, -73.1300, 0.6], [7.1250, -73.1200, 0.5]
+            ]
+        },
+        {
+            nombre: 'Noche',
+            emoji: '🌙',
+            rango: '20:00-00:00',
+            descripcion: 'Restaurantes, centros comerciales y ocio',
+            zonas: [
+                { nombre: 'Zona de Ocio Centro', lat: 7.1250, lng: -73.1180, demanda: 'muy_alta', razon: 'Restaurantes y bares', mejorHorario: '20:00-23:00' },
+                { nombre: 'Cines y Entretenimiento', lat: 7.1100, lng: -73.1050, demanda: 'alta', razon: 'Cines y diversión', mejorHorario: '20:00-23:00' },
+                { nombre: 'Discotecas Centro', lat: 7.1200, lng: -73.1200, demanda: 'alta', razon: 'Vida nocturna', mejorHorario: '22:00-00:00' }
+            ],
+            heatmapPoints: [
+                [7.1250, -73.1180, 0.95], [7.1255, -73.1175, 0.9], [7.1245, -73.1185, 0.85], [7.1260, -73.1170, 0.8], [7.1240, -73.1190, 0.75],
+                [7.1100, -73.1050, 0.8], [7.1105, -73.1045, 0.75], [7.1095, -73.1055, 0.7], [7.1110, -73.1040, 0.65], [7.1090, -73.1060, 0.6],
+                [7.1200, -73.1200, 0.75], [7.1205, -73.1195, 0.7], [7.1195, -73.1205, 0.65], [7.1210, -73.1190, 0.6],
+                [7.1150, -73.1100, 0.7], [7.1180, -73.1024, 0.6]
+            ]
+        }
+    ];
+
+    let mapInstance = null;
+    let heatmapLayer = null;
+    const centerBucaramanga = [7.1255, -73.1183];
+
+    // Inicializar mapa cuando el DOM esté listo
+    function inicializarMapa() {
+        if (mapInstance) return;
+
+        mapInstance = L.map('demandaMap').setView(centerBucaramanga, 12);
+
+        // Agregar OpenStreetMap
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors',
+            maxZoom: 19,
+            minZoom: 11
+        }).addTo(mapInstance);
+
+        // Botón centrar mapa
+        document.getElementById('centerMapBtn').addEventListener('click', () => {
+            mapInstance.setView(centerBucaramanga, 12);
+        });
+
+        // Actualizar mapa cada minuto
+        actualizarMapa();
+        setInterval(actualizarMapa, 60000);
+    }
+
+    // Obtener horario actual y actualizar mapa
+    function actualizarMapa() {
+        const ahora = new Date();
+        const hora = ahora.getHours();
+        const minutos = ahora.getMinutes();
+        const horaActual = hora + minutos / 60;
+
+        let horarioActual = null;
+        
+        if (horaActual >= 0 && horaActual < 5) {
+            horarioActual = horariosConfig[0];
+        } else if (horaActual >= 5 && horaActual < 8) {
+            horarioActual = horariosConfig[1];
+        } else if (horaActual >= 8 && horaActual < 12) {
+            horarioActual = horariosConfig[2];
+        } else if (horaActual >= 12 && horaActual < 14) {
+            horarioActual = horariosConfig[3];
+        } else if (horaActual >= 14 && horaActual < 17) {
+            horarioActual = horariosConfig[4];
+        } else if (horaActual >= 17 && horaActual < 20) {
+            horarioActual = horariosConfig[5];
+        } else if (horaActual >= 20 && horaActual < 24) {
+            horarioActual = horariosConfig[6];
+        }
+
+        if (horarioActual) {
+            actualizarVistaHorario(horarioActual);
+            renderizarHeatmap(horarioActual);
+        }
+    }
+
+    // Actualizar información del horario
+    function actualizarVistaHorario(horario) {
+        document.getElementById('statusEmoji').textContent = horario.emoji;
+        document.getElementById('statusText').textContent = horario.nombre;
+        document.getElementById('currentTime').textContent = horario.rango + ' (' + horario.descripcion + ')';
+    }
+
+    // Renderizar heatmap con datos de demanda
+    function renderizarHeatmap(horario) {
+        if (heatmapLayer) {
+            mapInstance.removeLayer(heatmapLayer);
+        }
+
+        // Usar los puntos de heatmap predefinidos del horario
+        const puntosCalor = horario.heatmapPoints || [];
+
+        // Crear heatmap con transición suave
+        heatmapLayer = L.heatLayer(puntosCalor, {
+            radius: 50,
+            blur: 40,
+            maxZoom: 17,
+            minOpacity: 0.3,
+            gradient: {
+                0.0: '#00CC00',  // Verde - Baja demanda
+                0.25: '#FFFF00', // Amarillo - Media demanda
+                0.5: '#FF8800',  // Naranja - Alta demanda
+                0.75: '#FF4400', // Rojo-naranja - Muy alta
+                1.0: '#FF0000'   // Rojo puro - Máxima demanda
+            }
+        }).addTo(mapInstance);
+
+        // Agregar efecto de transición suave
+        heatmapLayer.setStyle({ opacity: 0 });
+        setTimeout(() => {
+            if (heatmapLayer) {
+                heatmapLayer.setStyle({ opacity: 1 });
+            }
+        }, 100);
+
+        // Agregar marcadores con información de zonas
+        horario.zonas.forEach(zona => {
+            const colorPunto = { 'muy_alta': '#FF0000', 'alta': '#FF8800', 'media': '#FFFF00', 'baja': '#00CC00' }[zona.demanda];
+            
+            const marker = L.circleMarker([zona.lat, zona.lng], {
+                radius: 8,
+                fillColor: colorPunto,
+                color: '#000',
+                weight: 2,
+                opacity: 1,
+                fillOpacity: 0.8
+            }).addTo(mapInstance);
+
+            const popupContent = `
+                <div class="popup-content">
+                    <h4>${zona.nombre}</h4>
+                    <p><span class="popup-label">Demanda:</span> ${zona.demanda.toUpperCase()}</p>
+                    <p><span class="popup-label">Razón:</span> ${zona.razon}</p>
+                    <p><span class="popup-label">Mejor horario:</span> ${zona.mejorHorario}</p>
+                </div>
+            `;
+
+            marker.bindPopup(popupContent);
+        });
+    }
+
+    // Inicializar mapa cuando la página cargue completamente
+    document.addEventListener('DOMContentLoaded', function() {
+        setTimeout(inicializarMapa, 500);
+    });
+
+    // Si el documento ya está cargado, inicializar inmediatamente
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', inicializarMapa);
+    } else {
+        setTimeout(inicializarMapa, 500);
+    }
+</script>
+
+</body>
+</html>
