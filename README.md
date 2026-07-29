@@ -178,5 +178,6 @@ Se agregarán nuevas funciones en futuras versiones, incluyendo herramientas int
 MIT License
 
 ---
-
-Desarrollado con ❤️ para la comunidad de conductores.
+DrivePilot
+Creado por Kode420 ❤️
+© 2026
