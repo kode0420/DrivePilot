@@ -2,6 +2,34 @@
 
 > Asistente Inteligente para Conductores de Aplicaciones de Movilidad.
 
+## 🌎 Historia del proyecto
+
+DrivePilot nació como un proyecto creado con la idea de desarrollar una herramienta útil para los conductores de plataformas de movilidad, ayudándolos a organizar sus ingresos, gastos y tomar mejores decisiones durante sus jornadas.
+
+La aplicación fue creada con el propósito de combinar tecnología y soluciones prácticas en una sola herramienta, buscando facilitar la administración diaria y brindar información clara que permita aprovechar mejor cada recorrido.
+
+Este proyecto representa la unión entre programación, innovación y la intención de crear herramientas que puedan ser utilizadas por cualquier persona que necesite mejorar su organización financiera.
+
+---
+
+## 👨‍💻 Creador
+
+Desarrollado por **Kode420**.
+
+---
+
+## 🌐 Demo
+
+Puedes probar la aplicación aquí:
+
+*(Agregar enlace de GitHub Pages cuando esté disponible)*
+
+---
+
+# 🚖 DrivePilot
+
+> Asistente Inteligente para Conductores de Aplicaciones de Movilidad.
+
 DrivePilot es una aplicación web diseñada para ayudar a conductores a administrar sus ingresos, gastos y jornadas de trabajo desde cualquier dispositivo.
 
 El objetivo del proyecto es ofrecer herramientas útiles para mejorar la productividad diaria mediante estadísticas, historial, análisis y mapas inteligentes de demanda.
